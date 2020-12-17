@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace Disco_Elysium_Text_Tool
 {
@@ -60,6 +61,7 @@ namespace Disco_Elysium_Text_Tool
                     }
                     else
                     {
+                        StreamWriter wt = new StreamWriter(Path.GetDirectoryName(opf.FileName) + "\\" + Path.GetFileName(opf.FileName) + ".FileSizeTable");
                         //settings
                         XmlWriterSettings settings = new XmlWriterSettings();
                         settings.ConformanceLevel = ConformanceLevel.Fragment;
@@ -73,7 +75,7 @@ namespace Disco_Elysium_Text_Tool
                         XmlWriter xmlwtactor = XmlWriter.Create(Path.GetDirectoryName(opf.FileName) + "\\Actors.xml", settings);
                         xmlwtactor.WriteStartElement("Actors");
                         xmlwtactor.WriteAttributeString("count", num.ToString());
-
+                        wt.WriteLine(Path.GetDirectoryName(opf.FileName) + "\\Actors.xml");
                         for (int i = 0; i < num; i++)
                         {
                             int id = rd.ReadInt32();
@@ -109,7 +111,7 @@ namespace Disco_Elysium_Text_Tool
                         XmlWriter xmlwtitem = XmlWriter.Create(Path.GetDirectoryName(opf.FileName) + "\\Items.xml", settings);
                         xmlwtitem.WriteStartElement("Items");
                         xmlwtitem.WriteAttributeString("count", num.ToString());
-
+                        wt.WriteLine(Path.GetDirectoryName(opf.FileName) + "\\Items.xml");
                         for (int i = 0; i < num; i++)
                         {
                             int id = rd.ReadInt32();
@@ -144,7 +146,7 @@ namespace Disco_Elysium_Text_Tool
                         XmlWriter xmlwtlocation = XmlWriter.Create(Path.GetDirectoryName(opf.FileName) + "\\Locations.xml", settings);
                         xmlwtlocation.WriteStartElement("Locations");
                         xmlwtlocation.WriteAttributeString("count", num.ToString());
-
+                        wt.WriteLine(Path.GetDirectoryName(opf.FileName) + "\\Locations.xml");
                         for (int i = 0; i < num; i++)
                         {
                             int id = rd.ReadInt32();
@@ -179,7 +181,7 @@ namespace Disco_Elysium_Text_Tool
                         XmlWriter xmlwtvariable = XmlWriter.Create(Path.GetDirectoryName(opf.FileName) + "\\Variables.xml", settings);
                         xmlwtvariable.WriteStartElement("Variables");
                         xmlwtvariable.WriteAttributeString("count", num.ToString());
-
+                        wt.WriteLine(Path.GetDirectoryName(opf.FileName) + "\\Variables.xml");
                         for (int i = 0; i < num; i++)
                         {
                             int id = rd.ReadInt32();
@@ -214,7 +216,7 @@ namespace Disco_Elysium_Text_Tool
                         XmlWriter xmlwtconversation = XmlWriter.Create(Path.GetDirectoryName(opf.FileName) + "\\Conversations.xml", settings);
                         xmlwtconversation.WriteStartElement("Conversations");
                         xmlwtconversation.WriteAttributeString("count", num.ToString());
-
+                        wt.WriteLine(Path.GetDirectoryName(opf.FileName) + "\\Conversations.xml");
                         for (int i = 0; i < num; i++)
                         {
                             int id = rd.ReadInt32();
@@ -304,7 +306,10 @@ namespace Disco_Elysium_Text_Tool
                         
                         xmlwtconversation.WriteEndElement();
                         xmlwtconversation.Close();
+
+                        wt.Close();
                     }
+                    
                     if (!File.Exists(opf.FileName + "_bk"))
                         Copy(opf.FileName, opf.FileName + "_bk");
                 }
@@ -369,7 +374,287 @@ namespace Disco_Elysium_Text_Tool
                     }
                     else
                     {
+                        string[] lines = File.ReadAllLines(opf.FileName);
+                        BinaryReader rd = new BinaryReader(new FileStream(Path.GetDirectoryName(opf.FileName) + "\\" + Path.GetFileNameWithoutExtension(opf.FileName) + "_bk", FileMode.Open, FileAccess.Read, FileShare.Read));
+                        BinaryWriter wt = new BinaryWriter(new FileStream(Path.GetDirectoryName(opf.FileName) + "\\" + Path.GetFileNameWithoutExtension(opf.FileName), FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite));
+                        wt.Write(rd.ReadBytes(224));
+                        int num = rd.ReadInt32();
+                        wt.Write(num);
 
+                        //Actors.xml
+                        foreach(XElement element in XElement.Load(lines[0]).Elements("Actor"))
+                        {
+                            int id = rd.ReadInt32();
+                            wt.Write(id);
+                            int but = rd.ReadInt32();
+                            wt.Write(but);
+                            for (int j = 0; j < but; j++)
+                            {
+                                int n = rd.ReadInt32();
+                                wt.Write(n);
+                                byte[] h = rd.ReadBytes(n);
+                                wt.Write(h);
+                                SkipWrite(wt);
+                                StringBuilder key = new StringBuilder(Encoding.UTF8.GetString(h));
+                                key.Replace(" ", "-");
+                                SkipByte(rd);
+                                n = rd.ReadInt32();
+                                StringBuilder value = new StringBuilder(element.Attribute(key.ToString()).Value);
+                                value.Replace("[r]", "\r");
+                                value.Replace("[n]", "\n");
+                                rd.ReadBytes(n);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()).Length);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()));
+                                SkipWrite(wt);
+                                SkipByte(rd);
+                                wt.Write(rd.ReadInt32());
+                                n = rd.ReadInt32();
+                                wt.Write(n);
+                                wt.Write(rd.ReadBytes(n));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                            }
+                            wt.Write(rd.ReadBytes(32));
+                        }
+
+                        num = rd.ReadInt32();
+                        wt.Write(num);
+                        //Items.xml
+                        foreach (XElement element in XElement.Load(lines[1]).Elements("Item"))
+                        {
+                            int id = rd.ReadInt32();
+                            wt.Write(id);
+                            int but = rd.ReadInt32();
+                            wt.Write(but);
+                            for (int j = 0; j < but; j++)
+                            {
+                                int n = rd.ReadInt32();
+                                wt.Write(n);
+                                byte[] h = rd.ReadBytes(n);
+                                wt.Write(h);
+                                SkipWrite(wt);
+                                StringBuilder key = new StringBuilder(Encoding.UTF8.GetString(h));
+                                key.Replace(" ", "-");
+                                SkipByte(rd);
+                                n = rd.ReadInt32();
+                                StringBuilder value = new StringBuilder(element.Attribute(key.ToString()).Value);
+                                value.Replace("[r]", "\r");
+                                value.Replace("[n]", "\n");
+                                rd.ReadBytes(n);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()).Length);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()));
+                                SkipWrite(wt);
+                                SkipByte(rd);
+                                wt.Write(rd.ReadInt32());
+                                n = rd.ReadInt32();
+                                wt.Write(n);
+                                wt.Write(rd.ReadBytes(n));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                            }
+                        }
+
+                        num = rd.ReadInt32();
+                        wt.Write(num);
+                        //Locations.xml
+                        foreach (XElement element in XElement.Load(lines[2]).Elements("Location"))
+                        {
+                            int id = rd.ReadInt32();
+                            wt.Write(id);
+                            int but = rd.ReadInt32();
+                            wt.Write(but);
+                            for (int j = 0; j < but; j++)
+                            {
+                                int n = rd.ReadInt32();
+                                wt.Write(n);
+                                byte[] h = rd.ReadBytes(n);
+                                wt.Write(h);
+                                SkipWrite(wt);
+                                StringBuilder key = new StringBuilder(Encoding.UTF8.GetString(h));
+                                key.Replace(" ", "-");
+                                SkipByte(rd);
+                                n = rd.ReadInt32();
+                                StringBuilder value = new StringBuilder(element.Attribute(key.ToString()).Value);
+                                value.Replace("[r]", "\r");
+                                value.Replace("[n]", "\n");
+                                rd.ReadBytes(n);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()).Length);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()));
+                                SkipWrite(wt);
+                                SkipByte(rd);
+                                wt.Write(rd.ReadInt32());
+                                n = rd.ReadInt32();
+                                wt.Write(n);
+                                wt.Write(rd.ReadBytes(n));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                            }
+                        }
+
+                        num = rd.ReadInt32();
+                        wt.Write(num);
+                        //Variables.xml
+                        foreach (XElement element in XElement.Load(lines[3]).Elements("Variable"))
+                        {
+                            int id = rd.ReadInt32();
+                            wt.Write(id);
+                            int but = rd.ReadInt32();
+                            wt.Write(but);
+                            for (int j = 0; j < but; j++)
+                            {
+                                int n = rd.ReadInt32();
+                                wt.Write(n);
+                                byte[] h = rd.ReadBytes(n);
+                                wt.Write(h);
+                                SkipWrite(wt);
+                                StringBuilder key = new StringBuilder(Encoding.UTF8.GetString(h));
+                                key.Replace(" ", "-");
+                                SkipByte(rd);
+                                n = rd.ReadInt32();
+                                StringBuilder value = new StringBuilder(element.Attribute(key.ToString()).Value);
+                                value.Replace("[r]", "\r");
+                                value.Replace("[n]", "\n");
+                                rd.ReadBytes(n);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()).Length);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()));
+                                SkipWrite(wt);
+                                SkipByte(rd);
+                                wt.Write(rd.ReadInt32());
+                                n = rd.ReadInt32();
+                                wt.Write(n);
+                                wt.Write(rd.ReadBytes(n));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                            }
+                        }
+
+                        num = rd.ReadInt32();
+                        wt.Write(num);
+                        //
+                        foreach(XElement element in XElement.Load(lines[4]).Elements("Conversation"))
+                        {
+                            int id = rd.ReadInt32();
+                            wt.Write(id);
+                            int but = rd.ReadInt32();
+                            wt.Write(but);
+                            for (int j = 0; j < but; j++)
+                            {
+                                int n = rd.ReadInt32();
+                                wt.Write(n);
+                                byte[] h = rd.ReadBytes(n);
+                                wt.Write(h);
+                                SkipWrite(wt);
+                                StringBuilder key = new StringBuilder(Encoding.UTF8.GetString(h));
+                                key.Replace(" ", "-");
+                                SkipByte(rd);
+                                n = rd.ReadInt32();
+                                StringBuilder value = new StringBuilder(element.Attribute(key.ToString()).Value);
+                                value.Replace("[r]", "\r");
+                                value.Replace("[n]", "\n");
+                                rd.ReadBytes(n);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()).Length);
+                                wt.Write(Encoding.UTF8.GetBytes(value.ToString()));
+                                SkipWrite(wt);
+                                SkipByte(rd);
+                                wt.Write(rd.ReadInt32());
+                                n = rd.ReadInt32();
+                                wt.Write(n);
+                                wt.Write(rd.ReadBytes(n));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                            }
+                            wt.Write(rd.ReadBytes(40));
+                            but = rd.ReadInt32();
+                            wt.Write(but);
+                            wt.Write(rd.ReadBytes(but));
+                            SkipByte(rd);
+                            SkipWrite(wt);
+                            but = rd.ReadInt32();
+                            wt.Write(but);
+                            wt.Write(rd.ReadBytes(but));
+                            SkipByte(rd);
+                            SkipWrite(wt);
+                            but = rd.ReadInt32();
+                            wt.Write(but);
+                            wt.Write(rd.ReadBytes(but));
+                            SkipByte(rd);
+                            SkipWrite(wt);
+                            wt.Write(rd.ReadBytes(16));
+                            but = rd.ReadInt32();
+                            wt.Write(but);
+                            wt.Write(rd.ReadBytes(but));
+                            SkipByte(rd);
+                            SkipWrite(wt);
+                            but = rd.ReadInt32();
+                            wt.Write(but);
+                            foreach (XElement elementLow in element.Elements("DialogueEntry"))
+                            {
+                                id = rd.ReadInt32();
+                                wt.Write(id);
+                                int kbut = rd.ReadInt32();
+                                wt.Write(kbut);
+                                for (int k = 0; k < kbut; k++)
+                                {
+                                    int n = rd.ReadInt32();
+                                    wt.Write(n);
+                                    byte[] h = rd.ReadBytes(n);
+                                    wt.Write(h);
+                                    SkipWrite(wt);
+                                    StringBuilder key = new StringBuilder(Encoding.UTF8.GetString(h));
+                                    key.Replace(" ", "-");
+                                    SkipByte(rd);
+                                    n = rd.ReadInt32();
+                                    StringBuilder value = new StringBuilder(elementLow.Attribute(key.ToString()).Value);
+                                    value.Replace("[r]", "\r");
+                                    value.Replace("[n]", "\n");
+                                    rd.ReadBytes(n);
+                                    wt.Write(Encoding.UTF8.GetBytes(value.ToString()).Length);
+                                    wt.Write(Encoding.UTF8.GetBytes(value.ToString()));
+                                    SkipWrite(wt);
+                                    SkipByte(rd);
+                                    wt.Write(rd.ReadInt32());
+                                    n = rd.ReadInt32();
+                                    wt.Write(n);
+                                    wt.Write(rd.ReadBytes(n));
+                                    SkipByte(rd);
+                                    SkipWrite(wt);
+                                }
+                                wt.Write(rd.ReadBytes(12));
+                                kbut = rd.ReadInt32();
+                                wt.Write(kbut);
+                                wt.Write(rd.ReadBytes(kbut));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                                wt.Write(rd.ReadInt32());
+                                kbut = rd.ReadInt32();
+                                wt.Write(kbut);
+                                wt.Write(rd.ReadBytes(kbut));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                                wt.Write(rd.ReadInt32());
+                                kbut = rd.ReadInt32();
+                                wt.Write(kbut);
+                                wt.Write(rd.ReadBytes(kbut * 24));
+                                kbut = rd.ReadInt32();
+                                wt.Write(kbut);
+                                wt.Write(rd.ReadBytes(kbut));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                                kbut = rd.ReadInt32();
+                                wt.Write(kbut);
+                                wt.Write(rd.ReadBytes(kbut));
+                                SkipByte(rd);
+                                SkipWrite(wt);
+                                kbut = rd.ReadInt32();
+                                wt.Write(kbut);
+                                wt.Write(rd.ReadBytes(kbut * 24));
+                                wt.Write(rd.ReadBytes(16));
+                            }
+                            wt.Write(rd.ReadBytes(12));
+                        }
+                        wt.Write(rd.ReadBytes((int)rd.BaseStream.Length - (int)rd.BaseStream.Position));
+                        wt.Close();
+                        rd.Close();
                     }
                 }
             }
@@ -398,9 +683,7 @@ namespace Disco_Elysium_Text_Tool
         public static void Copy(string inputFilePath, string outputFilePath)
         {
             int bufferSize = 1024 * 1024;
-
             using (FileStream fileStream = new FileStream(outputFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite))
-            //using (FileStream fs = File.Open(<file-path>, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 FileStream fs = new FileStream(inputFilePath, FileMode.Open, FileAccess.ReadWrite);
                 fileStream.SetLength(fs.Length);
