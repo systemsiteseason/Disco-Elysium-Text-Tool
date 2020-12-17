@@ -312,6 +312,8 @@ namespace Disco_Elysium_Text_Tool
                     
                     if (!File.Exists(opf.FileName + "_bk"))
                         Copy(opf.FileName, opf.FileName + "_bk");
+
+                    MessageBox.Show("Done!!");
                 }
             }
         }
@@ -656,6 +658,7 @@ namespace Disco_Elysium_Text_Tool
                         wt.Close();
                         rd.Close();
                     }
+                    MessageBox.Show("Done!!");
                 }
             }
         }
